@@ -167,12 +167,27 @@
 <main class="container mx-auto p-4 max-w-[1400px]">
   <div class="flex items-center justify-center gap-4 mb-8">
     <div class="w-[600px]">
-      <Input
-        type="file"
-        id="excel-upload"
-        accept=".xlsx,.xls"
-        on:change={handleFileUpload}
-      />
+      <div class="flex items-center justify-center">
+        <input
+          type="file"
+          id="excel-upload"
+          accept=".xlsx,.xls"
+          on:change={handleFileUpload}
+          style="display: none;"
+        />
+        <div class="flex items-center gap-3">
+          <Button
+            color="blue"
+            size="md"
+            on:click={() => document.getElementById('excel-upload')?.click()}
+          >
+            选择文件
+          </Button>
+          {#if excelFile}
+            <span class="text-gray-600">{excelFile.name}</span>
+          {/if}
+        </div>
+      </div>
     </div>
     {#if sheets.length > 0}
       <Button
