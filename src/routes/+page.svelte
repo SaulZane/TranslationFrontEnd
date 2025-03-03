@@ -90,75 +90,114 @@
     );
   }
 
-  function handleTranslate() {
+  async function handleTranslate() {
     if (!excelFile || hasUnselectedTranslations()) return;
 
-    // 创建新的工作簿
-    const newWorkbook = XLSX.utils.book_new();
+    try {
+      // 读取原始工作簿
+      const originalWorkbook = XLSX.read(await excelFile.arrayBuffer());
+      
+      // 创建新的工作簿
+      const newWorkbook = XLSX.utils.book_new();
 
-    // 需要在翻译值之间添加顿号的键名列表
-    const needCommaKeys = ['机动车：状态', '驾驶证：状态'];
+      // 需要在翻译值之间添加顿号的键名列表
+      const needCommaKeys = ['机动车：状态', '驾驶证：状态'];
 
-    sheets.forEach(sheet => {
-      const newData = sheet.data.map((row, rowIndex) => {
-        if (rowIndex === 0) return row; // 保持表头不变
+      sheets.forEach(sheet => {
+        const newData = sheet.data.map((row, rowIndex) => {
+          if (rowIndex === 0) return row; // 保持表头不变
 
-        // 查找业务类型和业务原因的列索引
-        let vehicleTypeColIndex: number | null = null;
-        let vehicleReasonColIndex: number | null = null;
-        let driverTypeColIndex: number | null = null;
-        let driverReasonColIndex: number | null = null;
+          // 查找业务类型和业务原因的列索引
+          let vehicleTypeColIndex: number | null = null;
+          let vehicleReasonColIndex: number | null = null;
+          let driverTypeColIndex: number | null = null;
+          let driverReasonColIndex: number | null = null;
 
-        Object.entries(sheet.selectedMaps).forEach(([colIndex, mapKey]) => {
-          if (mapKey === '机动车：业务类型') vehicleTypeColIndex = Number(colIndex);
-          if (mapKey === '机动车：业务原因') vehicleReasonColIndex = Number(colIndex);
-          if (mapKey === '驾驶员：业务类型') driverTypeColIndex = Number(colIndex);
-          if (mapKey === '驾驶员：业务原因') driverReasonColIndex = Number(colIndex);
-        });
-        
-        return row.map((cell, colIndex) => {
-          const mapKey = sheet.selectedMaps[colIndex];
-          if (!mapKey || !translationMaps[mapKey]) return cell;
+          Object.entries(sheet.selectedMaps).forEach(([colIndex, mapKey]) => {
+            if (mapKey === '机动车：业务类型') vehicleTypeColIndex = Number(colIndex);
+            if (mapKey === '机动车：业务原因') vehicleReasonColIndex = Number(colIndex);
+            if (mapKey === '驾驶员：业务类型') driverTypeColIndex = Number(colIndex);
+            if (mapKey === '驾驶员：业务原因') driverReasonColIndex = Number(colIndex);
+          });
           
-          // 处理业务原因的特殊翻译逻辑
-          if ((mapKey === '机动车：业务原因' && vehicleTypeColIndex !== null) || 
-              (mapKey === '驾驶员：业务原因' && driverTypeColIndex !== null)) {
-            // 获取对应的业务类型值
-            const typeValue = mapKey === '机动车：业务原因' 
-              ? row[vehicleTypeColIndex!] as string
-              : row[driverTypeColIndex!] as string;
-            
-            const reasonMap = translationMaps[mapKey];
-            const reasonTranslation = (reasonMap as any)[typeValue];
-            if (reasonTranslation && typeof cell === 'string') {
-              return reasonTranslation[cell] || cell;
+          return row.map((cell, colIndex) => {
+            const mapKey = sheet.selectedMaps[colIndex];
+            if (!mapKey || !translationMaps[mapKey]) return cell;
+
+            // 检查是否为日期类型
+            if (cell instanceof Date) {
+              return cell; // 保持日期对象不变
             }
+            
+            // 检查是否为Excel日期序列号
+            if (typeof cell === 'number' && XLSX.SSF.is_date(XLSX.SSF.get_table()[14])) {
+              return cell; // 保持Excel日期序列号不变
+            }
+            
+            // 处理业务原因的特殊翻译逻辑
+            if ((mapKey === '机动车：业务原因' && vehicleTypeColIndex !== null) || 
+                (mapKey === '驾驶员：业务原因' && driverTypeColIndex !== null)) {
+              // 获取对应的业务类型值
+              const typeValue = mapKey === '机动车：业务原因' 
+                ? row[vehicleTypeColIndex!] as string
+                : row[driverTypeColIndex!] as string;
+              
+              const reasonMap = translationMaps[mapKey];
+              const reasonTranslation = (reasonMap as any)[typeValue];
+              if (reasonTranslation && typeof cell === 'string') {
+                return reasonTranslation[cell] || cell;
+              }
+              return cell;
+            }
+            
+            const translation = translationMaps[mapKey];
+            
+            // 处理需要添加顿号的字段
+            if (needCommaKeys.includes(mapKey) && typeof cell === 'string') {
+              const translatedParts = cell.split('').map(char => (translation as Record<string, string>)[char] || char);
+              return translatedParts.join('、');
+            }
+            
+            // 普通翻译
+            if (typeof translation === 'object' && !Array.isArray(translation)) {
+              return (translation as Record<string, string>)[cell] || cell;
+            }
+            
             return cell;
-          }
-          
-          const translation = translationMaps[mapKey];
-          
-          // 处理需要添加顿号的字段
-          if (needCommaKeys.includes(mapKey) && typeof cell === 'string') {
-            const translatedParts = cell.split('').map(char => (translation as Record<string, string>)[char] || char);
-            return translatedParts.join('、');
-          }
-          
-          // 普通翻译
-          if (typeof translation === 'object' && !Array.isArray(translation)) {
-            return (translation as Record<string, string>)[cell] || cell;
-          }
-          
-          return cell;
+          });
         });
+
+        // 创建新的工作表并保持原始格式
+        const newWorksheet = XLSX.utils.aoa_to_sheet(newData);
+        
+        // 复制原始工作表的格式
+        const originalWorksheet = originalWorkbook.Sheets[sheet.name];
+        if (originalWorksheet['!cols']) newWorksheet['!cols'] = originalWorksheet['!cols'];
+        if (originalWorksheet['!rows']) newWorksheet['!rows'] = originalWorksheet['!rows'];
+        if (originalWorksheet['!merges']) newWorksheet['!merges'] = originalWorksheet['!merges'];
+        
+        // 复制单元格格式
+        Object.keys(newWorksheet).forEach(cell => {
+          if (cell[0] === '!') return; // 跳过特殊属性
+          if (originalWorksheet[cell] && originalWorksheet[cell].z) {
+            // 复制数字格式字符串
+            newWorksheet[cell].z = originalWorksheet[cell].z;
+          }
+          // 对于日期类型的单元格，设置默认日期格式
+          if (newWorksheet[cell].t === 'd') {
+            newWorksheet[cell].z = newWorksheet[cell].z || 'yyyy-mm-dd hh:mm:ss';
+          }
+        });
+
+        XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheet.name);
       });
 
-      const newWorksheet = XLSX.utils.aoa_to_sheet(newData);
-      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheet.name);
-    });
-
-    // 导出新的Excel文件
-    XLSX.writeFile(newWorkbook, '翻译后的_' + excelFile.name);
+      // 导出新的Excel文件
+      XLSX.writeFile(newWorkbook, '翻译后的_' + excelFile.name);
+    } catch (error) {
+      console.error('Error during translation:', error);
+      errorMessage = error instanceof Error ? error.message : '转换过程中发生错误';
+    }
   }
 
   let dropdownOpen: Record<string, boolean> = {};
