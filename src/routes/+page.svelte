@@ -150,6 +150,22 @@
 
         // 处理每一行数据
         originalSheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) { // 跳过表头行
+            // 仍然需要复制表头行本身到新表
+            const newRow = newSheet.getRow(rowNumber);
+            row.eachCell((cell, colNumber) => {
+              const newCell = newRow.getCell(colNumber);
+              newCell.value = cell.value;
+              if (cell.style) {
+                newCell.style = cell.style;
+              }
+            });
+            if (row.height) {
+                newRow.height = row.height;
+            }
+            return; 
+          }
+
           const newRow = newSheet.getRow(rowNumber);
           
           // 复制单元格格式和样式
