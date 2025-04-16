@@ -30,5 +30,5 @@ vite.config.ts.timestamp-*
 *.xltx
 *.xltm
 
-/src/lib/translations.ts
-/src/lib/prior.ts
+# Lib files
+src/lib/
