@@ -122,7 +122,7 @@
       newWorkbook.modified = new Date();
 
       // 需要在翻译值之间添加顿号的键名列表
-      const needCommaKeys = ['机动车：状态', '驾驶证：状态'];
+      const needCommaKeys = ['机动车：状态', '驾驶证：状态', '机动车：车身颜色'];
 
       sheets.forEach((sheetData, sheetIndex) => {
         const originalSheet = originalWorkbook.worksheets[sheetIndex];
@@ -191,25 +191,42 @@
               if ((mapKey === '机动车：业务原因' && vehicleTypeColIndex !== null) || 
                   (mapKey === '驾驶员：业务原因' && driverTypeColIndex !== null)) {
                 const typeCell = row.getCell(mapKey === '机动车：业务原因' ? vehicleTypeColIndex! : driverTypeColIndex!);
-                const typeValue = typeCell.text;
+                const typeValue = typeCell.text; // 获取业务类型的值，例如 'D'
                 
-                const reasonMap = translationMaps[mapKey];
-                const reasonTranslation = (reasonMap as any)[typeValue];
-                if (reasonTranslation && typeof value === 'string') {
-                  value = reasonTranslation[value] || value;
+                const reasonMap = translationMaps[mapKey]; // 获取 '机动车：业务原因' 或 '驾驶员：业务原因' 的整个映射
+                
+                // 检查是否存在对应的业务类型映射，并且当前单元格的值是字符串
+                if (reasonMap && typeof reasonMap === 'object' && typeValue in reasonMap && typeof value === 'string' && value.length > 0) {
+                  const reasonTranslationMap = (reasonMap as any)[typeValue]; // 获取特定业务类型下的原因映射，例如 {'F': '变更(发动机)', 'D': '变更(车身颜色)'}
+
+                  if (reasonTranslationMap && typeof reasonTranslationMap === 'object') {
+                    // 将原因代码字符串（例如 'DF'）拆分为单个字符数组 ['D', 'F']
+                    const translatedParts = value.split('').map(reasonCharCode => {
+                      // 查找每个字符代码的翻译，如果找不到则使用原字符
+                      return (reasonTranslationMap as Record<string, string>)[reasonCharCode] || reasonCharCode;
+                    });
+                    // 使用顿号连接翻译后的部分
+                    value = translatedParts.join('、');
+                  } 
+                  // 如果 reasonTranslationMap 不存在或不是对象，value 保持不变
                 }
+                 // 如果不满足上述条件（例如 typeValue 不在 reasonMap 中，或 value 不是字符串），value 保持不变
+
               } else {
+                // 处理其他普通翻译和需要加顿号的状态字段
                 const translation = translationMaps[mapKey];
                 
-                // 处理需要添加顿号的字段
+                // 处理需要添加顿号的状态字段（保持原有逻辑）
                 if (needCommaKeys.includes(mapKey) && typeof value === 'string') {
                   const translatedParts = value.split('').map(char => 
                     (translation as Record<string, string>)[char] || char
                   );
                   value = translatedParts.join('、');
                 } else if (typeof translation === 'object' && !Array.isArray(translation)) {
+                   // 处理标准的键值对翻译
                   value = (translation as Record<string, string>)[value as string] || value;
                 }
+                 // 如果 translation 不是对象，value 保持不变
               }
             }
             
@@ -271,6 +288,7 @@
           {#if excelFile}
             <span class="text-gray-600">{excelFile.name}</span>
           {/if}
+          <a href="/search" class="text-blue-600 hover:underline self-center ml-2">快速索引</a>
         </div>
       </div>
     </div>

@@ -26,6 +26,7 @@
 		"exceljs": "^4.4.0",
 		"flowbite": "^2.5.2",
 		"flowbite-svelte": "^0.47.4",
+		"flowbite-svelte-icons": "^2.1.1",
 		"xlsx": "^0.18.5"
 	}
 }
