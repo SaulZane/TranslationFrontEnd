@@ -212,6 +212,21 @@
                 }
                  // 如果不满足上述条件（例如 typeValue 不在 reasonMap 中，或 value 不是字符串），value 保持不变
 
+              } else if (mapKey === '机动车：相关资料' && typeof value === 'string') {
+                const translationSubMap = translationMaps[mapKey];
+                // Ensure translationSubMap is the specific map for '机动车: 相关资料'
+                if (typeof translationSubMap === 'object' && 
+                    !Array.isArray(translationSubMap) && 
+                    translationMaps['机动车：相关资料'] === translationSubMap) {
+                    const parts = value.split(',');
+                    const translatedParts = parts.map(part => {
+                        const trimmedPart = part.trim();
+                        const keyToLookup = String(trimmedPart); // Ensure string key for lookup
+                        return (translationSubMap as Record<string, string>)[keyToLookup] || keyToLookup;
+                    });
+                    value = translatedParts.join(',');
+                }
+                // If it's not the specific map or value is not a string, value remains unchanged.
               } else {
                 // 处理其他普通翻译和需要加顿号的状态字段
                 const translation = translationMaps[mapKey];
