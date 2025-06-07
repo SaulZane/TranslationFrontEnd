@@ -3,6 +3,7 @@
   import * as ExcelJS from 'exceljs';
   import { translationMaps, type TranslationKey } from '$lib/translations';
   import { columnMappings } from '$lib/prior';
+  import { searchByPinyin } from '$lib/chartopinyin';
   
   type SheetData = {
     name: string;
@@ -19,11 +20,10 @@
   let errorMessage: string | null = null;
   
   function getFilteredTranslationKeys(searchText: string): string[] {
-    if (!searchText) return Object.keys(translationMaps);
+    if (!searchText) return Object.keys(translationMaps); // 如果搜索文本为空，返回所有键
 
-    return Object.keys(translationMaps).filter(key =>
-      key.toLowerCase().includes(searchText.toLowerCase())
-    );
+    // 使用增强的拼音搜索功能，支持汉字和拼音首字母搜索
+    return searchByPinyin(searchText);
   }
 
   async function handleFileUpload(event: Event) {
@@ -426,7 +426,7 @@
                             <div class="p-2">
                               <Search
                                 size="sm"
-                                placeholder="搜索对应项..."
+                                placeholder="汉字或者首字母搜索"
                                 bind:value={searchTexts[`${sheetIndex}-${columnIndex}`]}
                               />
                             </div>

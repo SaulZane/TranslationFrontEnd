@@ -157,7 +157,7 @@
   <h1 class="text-2xl font-bold mb-6">快速索引查询</h1>
 
   <div class="flex items-center space-x-2 mb-6 w-full max-w-md">
-    <Input type="text" placeholder="输入类型、键或值进行查询（可使用%或_）" bind:value={searchKey} class="flex-grow w-full max-w-md" on:keydown={(e) => e.key === 'Enter' && handleSearch()}/>   
+    <Input type="text" placeholder="输入类型、键或值进行查询（可使用%或_）" bind:value={searchKey} class="flex-grow w-full max-w-md" on:keydown={(e) => e.key === 'Enter' && handleSearch()}/>
     <Button on:click={handleSearch} class="px-4 min-w-[80px]">查询</Button>
   </div>
 
