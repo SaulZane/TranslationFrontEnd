@@ -211,19 +211,19 @@
                 }
                  // 如果不满足上述条件（例如 typeValue 不在 reasonMap 中，或 value 不是字符串），value 保持不变
 
-              } else if (mapKey === '机动车：相关资料' && typeof value === 'string') {
+              } else if ((mapKey === '机动车：相关资料' || mapKey === '驾驶员：相关资料') && typeof value === 'string') {
                 const translationSubMap = translationMaps[mapKey];
                 // 确保translationSubMap是特定映射
                 if (typeof translationSubMap === 'object' &&
                     !Array.isArray(translationSubMap) &&
-                    translationMaps['机动车：相关资料'] === translationSubMap) {
-                    const parts = value.split(',');
+                    translationMaps[mapKey] === translationSubMap) {
+                    const parts = value.split(''); // 确保parts是字符串数组，而不是单个字符
                     const translatedParts = parts.map(part => {
                         const trimmedPart = part.trim();
                         const keyToLookup = String(trimmedPart);
                         return (translationSubMap as Record<string, string>)[keyToLookup] || keyToLookup;
                     });
-                    value = translatedParts.join(',');
+                    value = translatedParts.join('，');
                 }
                 // 如果不是特定的映射或值不是字符串，value保持不变。
               } else if ((mapKey === '机动车：业务岗位' || mapKey === '驾驶员：业务岗位') && typeof value === 'string') {
