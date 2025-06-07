@@ -20,9 +20,9 @@
   
   function getFilteredTranslationKeys(searchText: string): string[] {
     if (!searchText) return Object.keys(translationMaps);
-    const lowerSearchText = searchText.toLowerCase();
-    return Object.keys(translationMaps).filter(key => 
-      key.toLowerCase().includes(lowerSearchText)
+
+    return Object.keys(translationMaps).filter(key =>
+      key.toLowerCase().includes(searchText.toLowerCase())
     );
   }
 
@@ -117,12 +117,11 @@
       
       // 创建新的工作簿
       const newWorkbook = new ExcelJS.Workbook();
-      newWorkbook.creator = 'ExcelJS';
-      newWorkbook.created = new Date();
-      newWorkbook.modified = new Date();
+
+
 
       // 需要在翻译值之间添加顿号的键名列表
-      const needCommaKeys = ['机动车：状态', '驾驶证：状态', '机动车：车身颜色'];
+      const needCommaKeys = ['机动车：状态', '驾驶员：状态', '机动车：车身颜色'];
 
       sheets.forEach((sheetData, sheetIndex) => {
         const originalSheet = originalWorkbook.worksheets[sheetIndex];
@@ -214,19 +213,64 @@
 
               } else if (mapKey === '机动车：相关资料' && typeof value === 'string') {
                 const translationSubMap = translationMaps[mapKey];
-                // Ensure translationSubMap is the specific map for '机动车: 相关资料'
-                if (typeof translationSubMap === 'object' && 
-                    !Array.isArray(translationSubMap) && 
+                // 确保translationSubMap是特定映射
+                if (typeof translationSubMap === 'object' &&
+                    !Array.isArray(translationSubMap) &&
                     translationMaps['机动车：相关资料'] === translationSubMap) {
                     const parts = value.split(',');
                     const translatedParts = parts.map(part => {
                         const trimmedPart = part.trim();
-                        const keyToLookup = String(trimmedPart); // Ensure string key for lookup
+                        const keyToLookup = String(trimmedPart);
                         return (translationSubMap as Record<string, string>)[keyToLookup] || keyToLookup;
                     });
                     value = translatedParts.join(',');
                 }
-                // If it's not the specific map or value is not a string, value remains unchanged.
+                // 如果不是特定的映射或值不是字符串，value保持不变。
+              } else if ((mapKey === '机动车：业务岗位' || mapKey === '驾驶员：业务岗位') && typeof value === 'string') {
+                // 根据表头和业务类型决定翻译逻辑
+                const translationObject = translationMaps[mapKey] as Record<string, string>;
+                if (translationObject && typeof translationObject === 'object' && !Array.isArray(translationObject)) {
+                    // 获取当前列的表头
+                    const currentHeader = sheetData.headers[colNumber - 1];
+
+                    // 判断是否需要特殊处理（逐个字符翻译并用→连接）
+                    let shouldProcessWithArrow = false;
+
+                    if (mapKey === '机动车：业务岗位') {
+                        // 机动车：业务岗位 - 表头为 YWGW、XYGW、YWLC 时特殊处理
+                        shouldProcessWithArrow = ['YWGW', 'XYGW', 'YWLC'].includes(currentHeader);
+                    } else if (mapKey === '驾驶员：业务岗位') {
+                        // 驾驶员：业务岗位 - 表头为 YWGW、XYGW 时特殊处理
+                        shouldProcessWithArrow = ['YWGW', 'XYGW'].includes(currentHeader);
+                    }
+
+                    if (shouldProcessWithArrow) {
+                        // 逐个字符翻译，多个字符用→连接
+                        const characters = value.split('');
+                        const translatedParts = characters.map(char =>
+                            translationObject[char] || char
+                        );
+
+                        if (characters.length > 1) {
+                            value = translatedParts.join('→');
+                        } else {
+                            value = translatedParts.length > 0 ? translatedParts[0] : '';
+                        }
+                    } else {
+                        // 其他情况按原有逻辑处理（直接连接，不用→）
+                        const characters = value.split('');
+                        const translatedParts = characters.map(char =>
+                            translationObject[char] || char
+                        );
+
+                        if (characters.length > 1) {
+                            value = translatedParts.join('');
+                        } else {
+                            value = translatedParts.length > 0 ? translatedParts[0] : '';
+                        }
+                    }
+                }
+                // 如果translationObject无效，value保持原值
               } else {
                 // 处理其他普通翻译和需要加顿号的状态字段
                 const translation = translationMaps[mapKey];
@@ -277,8 +321,6 @@
       errorMessage = error instanceof Error ? error.message : '转换过程中发生错误';
     }
   }
-
-  let dropdownOpen: Record<string, boolean> = {};
 </script>
 
 <main class="container mx-auto p-4 max-w-[1400px]">
