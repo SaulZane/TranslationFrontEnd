@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { Input, Button, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell } from 'flowbite-svelte';
   import { translationMaps } from '$lib/translations';
   import { ChevronUpOutline, ChevronDownOutline } from 'flowbite-svelte-icons'; // 导入图标
-
+  import {  Input, Button, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell ,Footer, FooterCopyright, FooterLinkGroup, FooterLink } from 'flowbite-svelte';
   let searchKey: string = '';
   let searchResults: { type: string; key: string; value: string }[] = [];
   let sortColumn: 'type' | 'key' | 'value' | null = null; // 当前排序列
@@ -154,6 +153,7 @@
 </script>
 
 <main class="container mx-auto p-4 flex flex-col items-center">
+  
   <h1 class="text-2xl font-bold mb-6">快速索引查询</h1>
 
   <div class="flex items-center space-x-2 mb-6 w-full max-w-md">
@@ -200,4 +200,28 @@
   {:else if searchKey.trim() !== '' && searchResults.length === 0}
      <p class="text-gray-500 mt-4">未找到匹配的结果。</p>
   {/if}
+
+
 </main> 
+
+
+<Footer class="fixed bottom-0 left-0 right-0 z-20 w-full bg-white border-t border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-600">
+  <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
+    <!-- 左侧版权信息 -->
+    <div class="text-left">
+      <small class="text-gray-500 dark:text-gray-400">
+        &copy;2025 | 如遇故障请联系 3079 | 该网站原作者<b>保留所有权利</b>
+        <br />
+        <small>编码技术栈 前端：SvelteKit + flowbite-svelte  | 代码辅助：Cursor + AugmentCode </small>
+      </small>
+    </div>
+
+    <!-- 右侧导航链接 -->
+    <div class="mt-3 md:mt-0">
+      <FooterLinkGroup class="flex flex-wrap items-center justify-center md:justify-end text-sm text-gray-500 dark:text-gray-400">
+        <FooterLink href="/">主页</FooterLink>
+        <FooterLink href="/search">索引</FooterLink>
+      </FooterLinkGroup>
+    </div>
+  </div>
+</Footer>

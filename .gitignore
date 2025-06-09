@@ -30,7 +30,10 @@ vite.config.ts.timestamp-*
 *.xltx
 *.xltm
 
+svelte-kit
+node_modules
 
 #除了src/lib/chartopinyin.ts外，/lib中的其它文件都不提交
 src/lib/*
 !src/lib/chartopinyin.ts
+!src/lib/components/
