@@ -15,6 +15,7 @@
     FooterLinkGroup,
     FooterLink,
     A,
+    Spinner,
   } from "flowbite-svelte";
   import * as ExcelJS from "exceljs";
   import { translationMaps, type TranslationKey } from "$lib/translations";
@@ -32,6 +33,8 @@
   let excelFile: File | null = null;
   let sheets: SheetData[] = [];
   let isAutoMatched = false;
+  let isLoading = false;
+  let isFileLoading = false;
 
   let searchTexts: Record<string, string> = {};
   let errorMessage: string | null = null;
@@ -48,6 +51,10 @@
       const target = event.target as HTMLInputElement;
       const file = target.files?.[0];
       if (!file) return;
+
+      // 开始文件加载
+      isFileLoading = true;
+      errorMessage = null; // 清除之前的错误信息
 
       excelFile = file;
       const arrayBuffer = await file.arrayBuffer();
@@ -87,6 +94,9 @@
       errorMessage =
         error instanceof Error ? error.message : "处理文件时发生错误";
       sheets = [];
+    } finally {
+      // 无论成功还是失败，都停止文件加载动画
+      isFileLoading = false;
     }
   }
 
@@ -130,6 +140,10 @@
 
   async function handleTranslate() {
     if (!excelFile || hasUnselectedTranslations()) return;
+
+    // 开始加载
+    isLoading = true;
+    errorMessage = null; // 清除之前的错误信息
 
     try {
       // 读取原始工作簿
@@ -410,6 +424,9 @@
       console.error("Error during translation:", error);
       errorMessage =
         error instanceof Error ? error.message : "转换过程中发生错误";
+    } finally {
+      // 无论成功还是失败，都停止加载动画
+      isLoading = false;
     }
   }
 </script>
@@ -445,11 +462,17 @@
           <Button
             color="blue"
             size="md"
+            disabled={isFileLoading}
             on:click={() => document.getElementById("excel-upload")?.click()}
           >
-            选择文件
+            {#if isFileLoading}
+              <Spinner class="me-3" size="4" color="white" />
+              处理中...
+            {:else}
+              选择文件
+            {/if}
           </Button>
-          {#if excelFile}
+          {#if excelFile && !isFileLoading}
             <span class="text-gray-600">{excelFile.name}</span>
           {/if}
         </div>
@@ -466,10 +489,15 @@
       <Button
         color="green"
         size="xl"
-        disabled={hasUnselectedTranslations()}
+        disabled={hasUnselectedTranslations() || isLoading}
         on:click={handleTranslate}
       >
-        开始转换
+        {#if isLoading}
+          <Spinner class="me-3" size="4" color="white" />
+          处理中...
+        {:else}
+          开始转换
+        {/if}
       </Button>
     {/if}
   </div>
